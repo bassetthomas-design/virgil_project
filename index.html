@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VIRGIL — Superintendant</title>
+  <style>
+    :root{
+      --bg:#080c0e;
+      --panel:#0b1013;
+      --panel-2:#090d10;
+      --line:#172126;
+      --ink:#eaf6ff;
+      --muted:#a3cbe0aa;
+
+      --accent:#00ffa3;
+      --danger:#ff4d4d;
+      --warn:#ffd166;
+      --good:#00ffa3;
+      --notice:#51c9ff;
+
+      --chip:#0b1418;
+      --bub:#0d1519;
+      --bub-me:#0a1216;
+      --shadow:0 10px 28px #0009;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;color:var(--ink);
+      background:
+        radial-gradient(900px 520px at 20% -10%, #0b251a55, transparent),
+        radial-gradient(1200px 800px at 100% 0%, #0a1e2840, transparent),
+        var(--bg);
+      font:14px/1.45 Inter,system-ui,Segoe UI,Roboto,Arial;
+    }
+
+    .app{display:grid;grid-template-columns:280px 1fr;grid-template-rows:auto 1fr auto;min-height:100vh}
+
+    /* Sidebar */
+    .aside{grid-row:1/4;grid-column:1;background:linear-gradient(180deg,var(--panel),var(--panel-2));border-right:1px solid var(--line);padding:18px 16px;display:flex;flex-direction:column;gap:16px}
+    .brand{letter-spacing:.3px;font-weight:800;color:var(--accent);opacity:.95;transition:color .6s ease}
+
+    /* Avatar */
+    .avatar{display:flex;justify-content:center;align-items:center}
+    .disc{width:160px;height:160px;border-radius:50%;display:grid;place-items:center;border:2px solid #103a2f;box-shadow:0 0 22px #00ffa322, inset 0 0 40px #00ffa31a;position:relative;background:radial-gradient(circle at 50% 40%,#0e271f99,transparent);transition:all .6s ease}
+    .disc .face{width:92px;height:92px;border-radius:50%;background:radial-gradient(circle at 50% 50%,#0b1814,#060a08);display:grid;place-items:center;border:1px solid #00ffa350;box-shadow:inset 0 0 24px #00ffa380;overflow:hidden;position:relative;transition:all .6s ease}
+    /* Yeux — taille & espacement UNIFORMES */
+    .eye{position:absolute;top:50%;width:12px;height:12px;background:var(--accent);border-radius:50%;opacity:.95;z-index:2;transform:translateY(-50%) rotate(0deg) scaleY(1);transition:transform .35s ease, border-radius .35s ease, box-shadow .35s ease, background-color .25s ease}
+    .eye.left{left:24px}
+    .eye.right{right:24px}
+
+    .scan{position:absolute;top:0;left:-100%;width:200%;height:100%;background:linear-gradient(90deg, transparent, #00ffa322, transparent);animation:none;z-index:1}
+    .ring{position:absolute;inset:-8px;border-radius:50%;border:3px solid var(--accent);box-shadow:0 0 34px #00ffa399, inset 0 0 12px #00ffa355;transition:all .6s ease, border-color .6s ease, box-shadow .6s ease, background .6s ease}
+
+    .mood-label{margin-top:6px;text-align:center;color:#7affd7;transition:color .6s ease}
+
+    .card{background:linear-gradient(180deg,#0e1418,#0b1013);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+    .rows{display:flex;flex-direction:column;gap:10px}
+
+    /* Legend dots */
+    .legend{margin-top:6px}
+    .legend ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+    .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+    .dot-idle{background:#2d574a}
+    .dot-analyze{background:var(--notice)}
+    .dot-good{background:var(--good)}
+    .dot-bad{background:var(--danger)}
+    .dot-notice{background:#f2f26b}
+    .dot-alert{background:#ff6a6a}
+
+    /* Top bar */
+    .top{grid-column:2;grid-row:1;display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--panel),transparent)}
+    .chip{background:var(--chip);border:1px solid var(--line);padding:6px 10px;border-radius:999px;color:#b7d0df}
+    .spacer{flex:1}
+    .clock{opacity:.7}
+
+    /* Chat area */
+    .main{grid-column:2;grid-row:2;display:grid;grid-template-rows:1fr auto;gap:12px;padding:16px}
+    .log{background:linear-gradient(180deg,#0d151a,#0a0f12);border:1px solid var(--line);border-radius:14px;padding:14px;overflow:auto;min-height:300px}
+    .msg{max-width:720px;margin:10px 6px;padding:12px 14px;border-radius:12px;border:1px solid #173036;background:#0a1216;box-shadow:0 6px 18px #0007;white-space:pre-wrap}
+    .msg.me{margin-left:auto;background:#0b151a}
+
+    /* Composer */
+    .composer{display:grid;grid-template-columns:1fr auto auto auto;gap:8px}
+    .input{background:#0a1419;border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--ink)}
+    .btn{border:1px solid #134f3d;background:#0e2a1f;color:#dfffee;padding:10px 14px;border-radius:12px;cursor:pointer}
+    .btn.primary{background:var(--accent);border-color:#0f3;color:#001b0d;font-weight:700;box-shadow:0 0 18px #00ffa338}
+    .btn.primary:hover{filter:brightness(1.05)}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+
+    .sources{font-size:12px;color:#9fb1c4;margin-top:4px}
+
+    /* === Animations par humeur (sans changer taille/espacement) === */
+    /* Veille : respiration + clignement léger */
+    @keyframes breathe{0%{box-shadow:0 0 0 0 #00ffa31f}70%{box-shadow:0 0 0 16px #00ffa300}100%{box-shadow:0 0 0 0 #00ffa300}}
+    @keyframes blink{0%,92%,100%{transform:translateY(-50%) scaleY(1)}95%{transform:translateY(-50%) scaleY(0.3)}}
+    .ring.idle{animation:breathe 2.6s ease-in-out infinite}
+    .face.idle .eye{animation:blink 6s ease-in-out infinite}
+
+    /* Analyse : balayage + léger glow, yeux ronds */
+    @keyframes scanMove{0%{left:-100%}100%{left:100%}}
+    .face.analyze .scan{animation:scanMove 1.8s linear infinite}
+    .face.analyze .eye{border-radius:50%; box-shadow:0 0 10px #51c9ff66}
+    .ring.analyze{border-color:var(--notice);box-shadow:0 0 26px #51c9ff66}
+
+    /* Bonne nouvelle : doux glow + sourire subtil (yeux un peu relevés et inclinés) */
+    @keyframes goodGlow{0%,100%{box-shadow:0 0 26px #00ffa366}50%{box-shadow:0 0 34px #00ffa399}}
+    .ring.good{border-color:var(--good);animation:goodGlow 2s ease-in-out infinite}
+    .face.good .eye{transform:translateY(calc(-50% - 2px)) rotate(-8deg) scaleY(.9)}
+    .face.good .eye.right{transform:translateY(calc(-50% - 2px)) rotate(8deg) scaleY(.9)}
+
+    /* Mauvaise nouvelle : micro-secousse + yeux plissés (via scaleY) */
+    @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-1px)}40%{transform:translateX(1px)}60%{transform:translateX(-1px)}80%{transform:translateX(1px)}}
+    .disc.bad{animation:shake .6s linear infinite}
+    .ring.bad{border-color:var(--danger);box-shadow:0 0 30px #ff4d4d77}
+    .face.bad .eye{transform:translateY(calc(-50% + 2px)) rotate(6deg) scaleY(.6)}
+    .face.bad .eye.right{transform:translateY(calc(-50% + 2px)) rotate(-6deg) scaleY(.6)}
+
+    /* Notice : anneau tournant + regard attentif (léger glow) */
+    @keyframes spin{to{transform:rotate(1turn)}}
+    .disc.notice .ring::after{
+      content:"";position:absolute;inset:-3px;border-radius:50%;
+      background:conic-gradient(from 0deg, #00ffa300, #ffd16666, #00ffa300 60%);
+      -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 0);
+              mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 0);
+      animation:spin 2.8s linear infinite;
+    }
+    .ring.notice{border-color:var(--warn)}
+    .face.notice .eye{box-shadow:0 0 8px #ffd16655}
+
+    /* Alerte : flash rouge + yeux inclinés (couleur danger) */
+    @keyframes alertPulse{0%,100%{box-shadow:0 0 20px #ff4d4d99}50%{box-shadow:0 0 40px #ff4d4dcc}}
+    @keyframes glare{0%{transform:translateY(-50%) rotate(-14deg) scaleY(.8)}60%{transform:translateY(-48%) rotate(-10deg) scaleY(.85)}100%{transform:translateY(-50%) rotate(-14deg) scaleY(.8)}}
+    .disc.alert{animation:shake .5s linear infinite}
+    .ring.alert{border-color:var(--danger);animation:alertPulse 1s ease-in-out infinite}
+    .face.alert .eye{background:var(--danger)}
+    .face.alert .eye.left{animation:glare 1.2s ease-in-out infinite}
+    .face.alert .eye.right{animation:glare 1.2s ease-in-out infinite; transform-origin:center;}
+
+    /* Terminé : halo bleu + yeux détendus */
+    @keyframes doneOnce{0%{box-shadow:0 0 0 0 #71d7ff55}100%{box-shadow:0 0 28px #71d7ff55}}
+    .ring.done{border-color:#71d7ff;animation:doneOnce 800ms ease-out 1 forwards}
+    .face.done .eye{transform:translateY(-50%) scaleY(.7); opacity:.9}
+
+    /* === Spark mode (ton 343 Guilty Spark) === */
+    @keyframes sparkIris{0%,100%{filter:drop-shadow(0 0 4px #00ffa355)}50%{filter:drop-shadow(0 0 8px #00ffa3aa)}}
+    .face.spark .eye.left{transform:translateY(-50%) rotate(-10deg) scaleY(.9)}
+    .face.spark .eye.right{transform:translateY(-50%) rotate(10deg) scaleY(.9)}
+    .face.spark .eye{animation:sparkIris 2.2s ease-in-out infinite}
+    .disc.spark .ring::before{content:"";position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(from 0deg,#00ffa300,#51c9ff33,#00ffa300 60%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 6px),#000 0);mask:radial-gradient(farthest-side,transparent calc(100% - 6px),#000 0);animation:spin 6s linear infinite;}
+
+    /* Test panel */
+    .testbar{display:flex;flex-wrap:wrap;gap:6px}
+    .btnsmall{padding:6px 10px;border-radius:10px;border:1px solid #1a3b32;background:#0e221c;color:#bfffe9;cursor:pointer;font-size:12px}
+    .btnsmall:hover{filter:brightness(1.1)}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="aside">
+      <div class="brand">VIRGIL</div>
+
+      <div class="avatar">
+        <div id="disc" class="disc idle">
+          <div id="ring" class="ring idle"></div>
+          <div id="face" class="face idle">
+            <div class="scan"></div>
+            <div class="eye left"></div>
+            <div class="eye right"></div>
+          </div>
+        </div>
+      </div>
+      <div id="moodLabel" class="mood-label">Veille</div>
+
+      <!-- Légende humeurs -->
+      <div class="card legend">
+        <ul>
+          <li><span class="dot dot-idle"></span>Veille</li>
+          <li><span class="dot dot-analyze"></span>Analyse</li>
+          <li><span class="dot dot-good"></span>Bonne nouvelle</li>
+          <li><span class="dot dot-bad"></span>Mauvaise nouvelle</li>
+          <li><span class="dot dot-notice"></span>Notice</li>
+          <li><span class="dot dot-alert"></span>Alerte</li>
+        </ul>
+      </div>
+
+      <!-- Panneau tests visuels -->
+      <div class="card rows" style="margin-top:8px;gap:8px">
+        <div style="font-weight:600;color:#a9ffc9">Tests rapides</div>
+        <div class="testbar">
+          <button id="tCycle" class="btnsmall">Cycle humeurs</button>
+          <button id="tIdle" class="btnsmall">Idle</button>
+          <button id="tAnalyze" class="btnsmall">Analyse</button>
+          <button id="tGood" class="btnsmall">Good</button>
+          <button id="tBad" class="btnsmall">Bad</button>
+          <button id="tNotice" class="btnsmall">Notice</button>
+          <button id="tAlert" class="btnsmall">Alert</button>
+          <button id="tDone" class="btnsmall">Done</button>
+        </div>
+      </div>
+
+      <div style="margin-top:auto;opacity:.6;font-size:12px">Prototype visuel — style Superintendant</div>
+    </aside>
+
+    <header class="top">
+      <span class="chip">OFS</span>
+      <span class="chip">Cloud (maquette)</span>
+      <span class="chip">Actif</span>
+      <span class="chip" id="memChip">Mémoire: ON</span>
+      <span class="chip" id="sparkChip">Spark: OFF</span>
+      <div class="spacer"></div>
+      <div id="clock" class="clock">--:--</div>
+    </header>
+
+    <main class="main">
+      <div id="log" class="log">
+        <div class="msg">Surveillance active. Je veille.</div>
+      </div>
+
+      <div class="composer">
+        <input id="input" class="input" placeholder="Écris ici… (ex: Résultat du RCT ?)">
+        <button id="btnDetails" class="btn">+ Détails</button>
+        <button id="btnSources" class="btn">Sources</button>
+        <button id="send" class="btn primary">Envoyer</button>
+        <div id="srcZone" class="sources" style="grid-column:1/-1"></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // ===== Intégration backend =====
+    const USE_SAME_ORIGIN = false; // mettre à true si front et API partagent le même origin
+    const apiBase = USE_SAME_ORIGIN ? location.origin : "http://127.0.0.1:8000";
+
+    // Éléments DOM
+    const el = {
+      ring: document.getElementById('ring'),
+      face: document.getElementById('face'),
+      disc: document.getElementById('disc'),
+      moodLabel: document.getElementById('moodLabel'),
+      log: document.getElementById('log'),
+      input: document.getElementById('input'),
+      send: document.getElementById('send'),
+      btnDetails: document.getElementById('btnDetails'),
+      btnSources: document.getElementById('btnSources'),
+      srcZone: document.getElementById('srcZone'),
+      clock: document.getElementById('clock'),
+      sparkChip: document.getElementById('sparkChip'),
+      memChip: document.getElementById('memChip')
+    };
+
+    // État global
+    const state = { mood:'idle', proactivity:true, memory:true, spark:false };
+
+    const moodMap = { idle:'Veille', analyze:'Analyse', good:'Bonne nouvelle', bad:'Mauvaise nouvelle', notice:'Notice', alert:'Alerte', done:'Terminé' };
+
+    function addMsg(text, me=false){
+      const div = document.createElement('div');
+      div.className = 'msg' + (me?' me':'');
+      div.textContent = text;
+      el.log.appendChild(div);
+      el.log.scrollTop = el.log.scrollHeight;
+    }
+    function setSources(sources){
+      el.srcZone.innerHTML='';
+      if(!sources || !sources.length) return;
+      const frag=document.createDocumentFragment();
+      const title=document.createElement('span'); title.textContent='Sources: ';
+      frag.appendChild(title);
+      sources.forEach((s,i)=>{ const a=document.createElement('a'); a.href=s.url||'#'; a.textContent=s.label||s.url||('#'+(i+1)); a.target='_blank'; a.rel='noopener'; frag.appendChild(a); if(i<sources.length-1) frag.appendChild(document.createTextNode(' · ')); });
+      el.srcZone.appendChild(frag);
+    }
+    function setMood(m){
+      state.mood = m || 'idle';
+      el.ring.className = 'ring '+state.mood + (state.spark?'':'');
+      el.face.className = 'face '+state.mood + (state.spark?' spark':'');
+      el.disc.className = 'disc '+state.mood + (state.spark?' spark':'');
+      el.moodLabel.textContent = (moodMap[state.mood] || 'Veille') + (state.spark?' · Spark':'');
+    }
+    function setSpark(on){
+      state.spark = !!on;
+      // rafraîchit les classes actuelles pour appliquer/retirer .spark
+      el.face.className = 'face '+state.mood + (state.spark?' spark':'');
+      el.disc.className = 'disc '+state.mood + (state.spark?' spark':'');
+      el.ring.className = 'ring '+state.mood + (state.spark?'':'');
+      el.moodLabel.textContent = (moodMap[state.mood] || 'Veille') + (state.spark?' · Spark':'');
+      if(el.sparkChip) el.sparkChip.textContent = 'Spark: ' + (state.spark? 'ON':'OFF');
+    }
+    function tick(){ const d=new Date(); const h=String(d.getHours()).padStart(2,'0'); const m=String(d.getMinutes()).padStart(2,'0'); if(el.clock) el.clock.textContent=`${h}:${m}`; }
+
+    async function send(){
+      const text=(el.input?.value||'').trim(); if(!text) return;
+      addMsg(text,true); el.input.value=''; setMood('analyze'); if(el.send) el.send.disabled=true;
+      try{
+        const res = await fetch(`${apiBase}/chat`,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ message:text, proactivity:state.proactivity, memory:state.memory, spark:state.spark }) });
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        addMsg(data.reply || '(réponse vide)');
+        setMood(data.mood || (data.alert?'alert':'done'));
+        setSpark(data.spark);
+        if(data.sources) setSources(data.sources);
+      }catch(err){ addMsg('Erreur: '+err.message); setMood('bad'); }
+      finally{ if(el.send) el.send.disabled=false; }
+    }
+
+    // Boutons tests visuels
+    const cycle=['idle','analyze','good','bad','notice','alert','done']; let ci=0;
+    const byId=id=>document.getElementById(id); const safe=(id,fn)=>{const b=byId(id); if(b) b.onclick=fn;};
+    safe('tCycle', ()=>{ setMood(cycle[ci]); ci=(ci+1)%cycle.length; });
+    safe('tIdle', ()=> setMood('idle'));
+    safe('tAnalyze', ()=> setMood('analyze'));
+    safe('tGood', ()=> setMood('good'));
+    safe('tBad', ()=> setMood('bad'));
+    safe('tNotice', ()=> setMood('notice'));
+    safe('tAlert', ()=> setMood('alert'));
+    safe('tDone', ()=> setMood('done'));
+
+    // Actions
+    if(el.send){ el.send.addEventListener('click', send); }
+    if(el.input){ el.input.addEventListener('keydown', e=>{ if(e.key==='Enter' && (e.ctrlKey||e.metaKey||!e.shiftKey)){ e.preventDefault(); send(); } }); }
+    if(el.btnDetails){ el.btnDetails.addEventListener('click', async()=>{ try{ const res=await fetch(`${apiBase}/logs?limit=15`); if(!res.ok) throw new Error(`HTTP ${res.status}`); const rows=await res.json(); const lines=rows.map(r=>`${r.alert?'⚠️':(r.refused?'⛔':'•')} [${r.mood}] ${r.ts} — ${r.message}`); addMsg('[Logs]\n'+lines.join('\n')); }catch(e){ addMsg('Logs indisponibles: '+e.message); } }); }
+    if(el.btnSources){ el.btnSources.addEventListener('click', ()=>{ if(!el.srcZone.textContent.trim()) addMsg('[Sources] Aucune pour le moment.'); else addMsg('[Sources] Voir la zone sous le composer.'); }); }
+    // Toggle Spark via chip (manuel) — peut être ignoré si spark auto
+    if(el.sparkChip){ el.sparkChip.addEventListener('click', ()=> setSpark(!state.spark)); }
+    // Toggle Memory via chip
+    if(el.memChip){ el.memChip.addEventListener('click', ()=> { state.memory = !state.memory; el.memChip.textContent = 'Mémoire: ' + (state.memory? 'ON':'OFF'); }); }
+
+    // Boot
+    tick(); setInterval(tick, 30000);
+    setMood('idle');
+    setSpark(false);
+  </script>
+</body>
+</html>
