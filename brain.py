@@ -21,9 +21,13 @@ try:
 except Exception:
     USE_OPENAI = False
 
-# The model to use when interacting with OpenAI. You can override via
-# environment variable VIRGIL_MODEL, e.g. "gpt-4.1" or similar.
-MODEL = os.getenv("VIRGIL_MODEL", "gpt-4.1-mini")
+# The model to use when interacting with OpenAI.
+#
+# OpenAI only supports JSON response mode on certain chat models (for example
+# `gpt-3.5-turbo-1106` and `gpt-4-1106-preview`).  Older names like
+# `gpt-4.1-mini` are not recognised by the API and will cause requests to
+# fail.  Default to a model with broad availability that supports JSON mode.
+MODEL = os.getenv("VIRGIL_MODEL", "gpt-3.5-turbo-1106")
 
 # System instructions to guide the model's behavior.
 SYSTEM = (
@@ -112,20 +116,31 @@ def think(user_message: str, history: List[Dict[str, str]]) -> Tuple[str, str, b
             spark = True
         # If none of the above matched, leave the default response
         return reply, mood, alert, spark, []
-    # Build the prompt for OpenAI. Pass the API key explicitly to the
-    # client constructor rather than relying on implicit environment
-    # configuration. This avoids situations where the key isn't picked up
-    # automatically, even though it is present in the environment.
+    # Build the chat messages for OpenAI. We explicitly pass the API key when
+    # constructing the client to avoid issues where the environment variable is
+    # not picked up automatically.  The history and user message are
+    # concatenated into a single user message so that the model can parse the
+    # conversation context.  A system message provides the instructions to the
+    # model.
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    prompt = f"[HISTO]\n{_fmt(history)}\n\n[USER]\n{user_message}\n\nRends un JSON strict."
+    formatted_history = _fmt(history)
+    # Construct a single user message containing the history and the new user
+    # message.  This avoids exceeding the token limits for short
+    # conversations and ensures the model sees the entire context.
+    prompt = f"[HISTO]\n{formatted_history}\n\n[USER]\n{user_message}\n\nRends un JSON strict."
+    messages = [
+        {"role": "system", "content": SYSTEM},
+        {"role": "user", "content": prompt},
+    ]
     try:
-        resp = client.responses.create(
+        completion = client.chat.completions.create(
             model=MODEL,
-            instructions=SYSTEM,
-            input=prompt,
+            messages=messages,
             response_format={"type": "json_object"},
         )
-        data = json.loads(resp.output_text)
+        # The content of the assistant message is expected to be a JSON string.
+        content = completion.choices[0].message.content
+        data = json.loads(content)
         reply = str(data.get("reply", "Compris."))
         mood = str(data.get("mood", "done"))
         alert = bool(data.get("alert", False))
@@ -138,7 +153,10 @@ def think(user_message: str, history: List[Dict[str, str]]) -> Tuple[str, str, b
     except Exception:
         # In case of any exception (network issues, parsing errors), use fallback
         m = (user_message or "").strip().lower()
-        reply, mood, alert, spark = "Compris.", "good", False, False
+        reply = "Compris."
+        mood = "good"
+        alert = False
+        spark = False
         if m.endswith("?"):
             reply, mood, spark = "Voici une réponse concise.", "analyze", True
         if "??" in m or "?!" in m:
