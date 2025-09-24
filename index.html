@@ -231,7 +231,9 @@
   <script>
     // ===== Intégration backend =====
     const USE_SAME_ORIGIN = false; // mettre à true si front et API partagent le même origin
-    const apiBase = USE_SAME_ORIGIN ? location.origin : "http://127.0.0.1:8000";
+    // Utilise l'URL de l'API déployée sur Render lorsque l'interface est servie depuis un domaine différent.
+    // Si front et API partagent le même origin, l'option USE_SAME_ORIGIN permet d'utiliser location.origin.
+    const apiBase = USE_SAME_ORIGIN ? location.origin : "https://virgil-project.onrender.com";
 
     // Éléments DOM
     const el = {
